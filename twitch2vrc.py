@@ -120,6 +120,7 @@ MAX_CHARS = 144
 
 T_MIN_DISPLAY = 5.0
 T_REFRESH = 0.1
+T_OSC_RATE_LIMIT = 1.1
 
 _osc = udp_client.SimpleUDPClient(VRC_OSC_HOST, VRC_OSC_PORT)
 
@@ -251,15 +252,21 @@ manager = DisplayManager()
 
 async def display_loop() -> None:
     last_sent: str | None = None
+    last_sent_time: float = 0.0
+
     while True:
         result = manager.update()
+
         if result is not None and result != last_sent:
-            send_chatbox(result)
-            last_sent = result
-            if result:
-                print(f"[ChatBox]\n{result}\n{'─' * 40}")
-            else:
-                print("[ChatBox] <cleared>")
+            now = time.monotonic()
+            if now - last_sent_time >= T_OSC_RATE_LIMIT:
+                send_chatbox(result)
+                last_sent = result
+                last_sent_time = now
+                if result:
+                    print(f"[ChatBox]\n{result}\n{'─' * 40}")
+                else:
+                    print("[ChatBox] <cleared>")
         await asyncio.sleep(T_REFRESH)
 
 
