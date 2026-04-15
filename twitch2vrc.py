@@ -8,7 +8,7 @@ from pythonosc import udp_client
 from twitchio.ext import commands
 
 
-DEFAULT_BLOCKED_USERS = [
+DEFAULT_BLOCKED_BOTS = [
     "Nightbot",
     "Wizebot",
     "Streamelements",
@@ -33,12 +33,12 @@ def load_config() -> tuple[str, str, set[str], tuple[str, ...]]:
             cfg = json.load(f)
         token = cfg.get("twitch_token", "")
         channel = cfg.get("twitch_channel", "")
-        blocked_users = cfg.get("blocked_users", DEFAULT_BLOCKED_USERS)
+        blocked_users = cfg.get("blocked_users", DEFAULT_BLOCKED_BOTS)
         blocked_prefixes = cfg.get(
             "blocked_prefixes", DEFAULT_BLOCKED_PREFIXES
         )
         if not isinstance(blocked_users, list):
-            blocked_users = DEFAULT_BLOCKED_USERS
+            blocked_users = DEFAULT_BLOCKED_BOTS
         if not isinstance(blocked_prefixes, list):
             blocked_prefixes = DEFAULT_BLOCKED_PREFIXES
         if token and channel:
@@ -77,7 +77,7 @@ def load_config() -> tuple[str, str, set[str], tuple[str, ...]]:
             {
                 "twitch_token": token,
                 "twitch_channel": channel,
-                "blocked_users": DEFAULT_BLOCKED_USERS,
+                "blocked_users": DEFAULT_BLOCKED_BOTS,
                 "blocked_prefixes": DEFAULT_BLOCKED_PREFIXES,
             },
             f,
@@ -87,7 +87,7 @@ def load_config() -> tuple[str, str, set[str], tuple[str, ...]]:
     return (
         token,
         channel,
-        {u.lower() for u in DEFAULT_BLOCKED_USERS},
+        {u.lower() for u in DEFAULT_BLOCKED_BOTS},
         tuple(DEFAULT_BLOCKED_PREFIXES),
     )
 
@@ -139,6 +139,28 @@ def split_into_blocks(username: str, message: str) -> list[str]:
         blocks.append(prefix + chunk)
 
     return blocks if blocks else [prefix.rstrip()]
+
+
+def strip_emotes(content: str, emotes_tag: str | None) -> str:
+    if not emotes_tag:
+        return content
+
+    ranges: list[tuple[int, int]] = []
+    for emote_part in emotes_tag.split("/"):
+        if ":" not in emote_part:
+            continue
+        _, positions = emote_part.split(":", 1)
+        for pos in positions.split(","):
+            if "-" not in pos:
+                continue
+            start, end = pos.split("-")
+            ranges.append((int(start), int(end)))
+
+    chars = list(content)
+    for start, end in sorted(ranges, reverse=True):
+        del chars[start:end + 1]
+
+    return " ".join("".join(chars).split())
 
 
 class DisplayItem:
@@ -255,6 +277,12 @@ class TwitchBot(commands.Bot):
             return
 
         if username.strip().lower() in BLOCKED_USERS:
+            return
+
+        emotes_tag = (message.tags or {}).get("emotes")
+        content = strip_emotes(content, emotes_tag)
+
+        if not content.strip():
             return
 
         print(f"[Twitch] {username}: {content}")
