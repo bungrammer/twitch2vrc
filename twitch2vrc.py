@@ -17,6 +17,8 @@ DEFAULT_BLOCKED_BOTS = [
 ]
 DEFAULT_BLOCKED_PREFIXES = ["!"]
 TOKEN_GENERATOR_URL = "https://twitchtokengenerator.com/quick/a9IivPUewe"
+DEFAULT_VRC_OSC_HOST = "127.0.0.1"
+DEFAULT_VRC_OSC_PORT = 9000
 
 
 def _config_path() -> str:
@@ -28,7 +30,7 @@ def _config_path() -> str:
     return os.path.join(os.path.dirname(base), "config.json")
 
 
-def load_config() -> tuple[str, str, set[str], tuple[str, ...]]:
+def load_config() -> tuple[str, str, set[str], tuple[str, ...], str, int]:
     path = _config_path()
     needs_token_help = True
     if os.path.exists(path):
@@ -41,10 +43,16 @@ def load_config() -> tuple[str, str, set[str], tuple[str, ...]]:
         blocked_prefixes = cfg.get(
             "blocked_prefixes", DEFAULT_BLOCKED_PREFIXES
         )
+        vrc_osc_host = cfg.get("vrc_osc_host", DEFAULT_VRC_OSC_HOST)
+        vrc_osc_port = cfg.get("vrc_osc_port", DEFAULT_VRC_OSC_PORT)
         if not isinstance(blocked_users, list):
             blocked_users = DEFAULT_BLOCKED_BOTS
         if not isinstance(blocked_prefixes, list):
             blocked_prefixes = DEFAULT_BLOCKED_PREFIXES
+        if not isinstance(vrc_osc_host, str):
+            vrc_osc_host = DEFAULT_VRC_OSC_HOST
+        if not isinstance(vrc_osc_port, int):
+            vrc_osc_port = DEFAULT_VRC_OSC_PORT
         if token and channel:
             cfg_changed = False
             if "blocked_users" not in cfg:
@@ -52,6 +60,12 @@ def load_config() -> tuple[str, str, set[str], tuple[str, ...]]:
                 cfg_changed = True
             if "blocked_prefixes" not in cfg:
                 cfg["blocked_prefixes"] = blocked_prefixes
+                cfg_changed = True
+            if "vrc_osc_host" not in cfg:
+                cfg["vrc_osc_host"] = vrc_osc_host
+                cfg_changed = True
+            if "vrc_osc_port" not in cfg:
+                cfg["vrc_osc_port"] = vrc_osc_port
                 cfg_changed = True
             if cfg_changed:
                 with open(path, "w") as f:
@@ -62,7 +76,10 @@ def load_config() -> tuple[str, str, set[str], tuple[str, ...]]:
             prefixes = tuple(
                 p for p in (x.strip() for x in blocked_prefixes) if p
             )
-            return token, channel, blocked, prefixes
+
+            return (
+                token, channel, blocked, prefixes, vrc_osc_host, vrc_osc_port
+            )
         print("config.json is incomplete — please re-enter your details.\n")
 
     if needs_token_help:
@@ -75,7 +92,7 @@ def load_config() -> tuple[str, str, set[str], tuple[str, ...]]:
         except Exception:
             print("Could not open your browser automatically.")
 
-    print("── First-run setup ──────────────────────────────────────────────")
+    print("──────────────────────── First-run setup ────────────────────────")
     print(f"Generate a token at {TOKEN_GENERATOR_URL}")
     print("Required scope: chat:read\n")
     token = input(
@@ -93,6 +110,8 @@ def load_config() -> tuple[str, str, set[str], tuple[str, ...]]:
                 "twitch_channel": channel,
                 "blocked_users": DEFAULT_BLOCKED_BOTS,
                 "blocked_prefixes": DEFAULT_BLOCKED_PREFIXES,
+                "vrc_osc_host": DEFAULT_VRC_OSC_HOST,
+                "vrc_osc_port": DEFAULT_VRC_OSC_PORT,
             },
             f,
             indent=2,
@@ -103,6 +122,8 @@ def load_config() -> tuple[str, str, set[str], tuple[str, ...]]:
         channel,
         {u.lower() for u in DEFAULT_BLOCKED_BOTS},
         tuple(DEFAULT_BLOCKED_PREFIXES),
+        DEFAULT_VRC_OSC_HOST,
+        DEFAULT_VRC_OSC_PORT,
     )
 
 
@@ -111,10 +132,10 @@ def load_config() -> tuple[str, str, set[str], tuple[str, ...]]:
     TWITCH_CHANNEL,
     BLOCKED_USERS,
     BLOCKED_PREFIXES,
+    VRC_OSC_HOST,
+    VRC_OSC_PORT,
 ) = load_config()
 
-VRC_OSC_HOST = "127.0.0.1"
-VRC_OSC_PORT = 9000
 
 MAX_CHARS = 144
 
