@@ -219,11 +219,13 @@ class DisplayItem:
 
 class DisplayManager:
     def __init__(self) -> None:
-        self.queue:  list[DisplayItem] = []   # Waiting to be shown
-        self.active: list[DisplayItem] = []   # Currently on screen
+        self.queue:  list[DisplayItem] = []
+        self.active: list[DisplayItem] = []
+        self.max_queue_size = 25
 
     def enqueue(self, username: str, message: str) -> None:
-        """Add a Twitch message to the display queue."""
+        if len(self.queue) >= self.max_queue_size:
+            self.queue.pop(0)
         full = f"{username}: {message}"
         if len(full) <= MAX_CHARS:
             self.queue.append(DisplayItem(full))
