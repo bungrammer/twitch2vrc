@@ -281,10 +281,10 @@ async def display_loop() -> None:
     while True:
         result = manager.update()
 
-        if result is None and result != last_sent:
+        if result is not None:
             pending = result
 
-        if result is not None and pending != last_sent:
+        if pending is not None and pending != last_sent:
             now = time.monotonic()
             if now - last_sent_time >= T_OSC_RATE_LIMIT:
                 send_chatbox(result)
