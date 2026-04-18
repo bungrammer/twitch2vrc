@@ -235,7 +235,7 @@ class DisplayManager:
 
     @staticmethod
     def _render(items: list[DisplayItem]) -> str:
-        return "\n".join(i.text for i in items)
+        return "\n---\n".join(i.text for i in items)
 
     def _fits(self, candidate: DisplayItem) -> bool:
         return len(self._render(self.active + [candidate])) <= MAX_CHARS
