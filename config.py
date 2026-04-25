@@ -17,7 +17,7 @@ class Config:
     vrc_osc_host: str
     vrc_osc_port: int
     blocked_bots: set[str] = field(default_factory=set)
-    blocked_prefixes: set[str, ...] = field(default_factory=set)
+    blocked_prefixes: tuple[str, ...] = field(default_factory=tuple)
 
 
 def _config_path() -> str:
@@ -67,7 +67,9 @@ def load_config() -> Config:
                 twitch_channel=channel,
                 vrc_osc_host=vrc_osc_host,
                 vrc_osc_port=vrc_osc_port,
-                blocked_bots={u.strip().lower() for u in blocked_bots if u.strip()},
+                blocked_bots={
+                        u.strip().lower() for u in blocked_bots if u.strip()
+                    },
                 blocked_prefixes=tuple(
                     p for p in (x.strip() for x in blocked_prefixes) if p
                 ),

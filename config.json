@@ -1,0 +1,8 @@
+{
+  "twitch_token": "oauth:ooiwarnbjpya5w6nyvghr9gmywlw2i",
+  "twitch_channel": "evilkarrot",
+  "vrc_osc_host": "192.168.58.180",
+  "vrc_osc_port": 9000,
+  "blocked_bots": [],
+  "blocked_prefixes": []
+}

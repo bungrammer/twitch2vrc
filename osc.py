@@ -6,7 +6,7 @@ MAX_CHARS = 144
 
 T_MIN_DISPLAY = 8.0
 T_REFRESH = 0.1
-T_OSC_RATE_LIMIT = 1.1
+T_OSC_RATE_LIMIT = 1.5
 
 _osc: udp_client.SimpleUDPClient | None = None
 
@@ -91,13 +91,17 @@ class DisplayManager:
     def _fits(self, item: DisplayItem) -> bool:
         return len(self._render(self.active + [item])) <= MAX_CHARS
 
+    @property
+    def current(self) -> str:
+        return self._render(self.active)
+
     def _try_advance(self) -> bool:
         if self.queue and self._fits(self.queue[0]):
             item = self.queue.pop(0)
             item.mark_shown()
             self.active.append(item)
             return True
-        if self.active and self.active[0].can_be_removed:
+        if self.queue and self.active and self.active[0].can_be_removed:
             self.active.pop(0)
             return True
         return False
@@ -105,37 +109,28 @@ class DisplayManager:
     def update(self) -> str | None:
         for item in self.active:
             item.mark_shown()
-        if not self.queue:
-            return None
-        changed = False
         while self._try_advance():
-            changed = True
-        return self._render(self.active) if changed else None
+            pass
 
 
 manager = DisplayManager()
 
 
 async def display_loop() -> None:
-    last_sent: str | None = None
     last_sent_time: float = 0.0
-    pending: str | None = None
 
     while True:
-        result = manager.update()
+        manager.update()
 
-        if result is not None:
-            pending = result
+        now = time.monotonic()
 
-        if pending is not None and pending != last_sent:
-            now = time.monotonic()
-            if now - last_sent_time >= T_OSC_RATE_LIMIT:
-                send_chatbox(pending)
-                last_sent = pending
-                last_sent_time = now
-                if pending:
-                    print(f"[ChatBox]\n{pending}\n{'-'*40}")
-                else:
-                    print("[ChatBox] Cleared\n" + "-"*40)
+        if now - last_sent_time >= T_OSC_RATE_LIMIT:
+            current = manager.current
+            send_chatbox(current)
+            last_sent_time = now
+            if current:
+                print(f"[ChatBox]\n{current}\n{'-'*40}")
+            else:
+                print("[ChatBox] <cleared>\n" + "-"*40)
 
         await asyncio.sleep(T_REFRESH)
